@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3DS Valentine's Edition - Template'</title>
+    <style>
+        :root {
+            --rojo-vino: #4a0e0e;
+            --rojo-base: #d32f2f;
+            --rojo-claro: #ffb4ab;
+            --3ds-light-bg: #e7e7e7;
+            --3ds-border: #abb0b4;
+            --3ds-select-green: #46e228;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        /* --- ESTILOS DE INICIO Y BOOT --- */
+        #tap-to-start {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; color: white; z-index: 5000;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+        }
+
+        #boot-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; display: none; z-index: 4000;
+        }
+
+        #ds-interface { display: none; flex-direction: column; height: 100vh; background: #fff; }
+
+        /* --- PANTALLA SUPERIOR --- */
+        #top-screen {
+            flex: 1;
+            background: linear-gradient(135deg, var(--rojo-vino) 0%, var(--rojo-base) 50%, var(--rojo-claro) 100%);
+            position: relative; overflow: hidden;
+            border-bottom: 4px solid #000;
+        }
+
+        .top-system-bar {
+            position: absolute; top: 0; width: 100%; height: 25px;
+            background: rgba(255,255,255,0.7); display: flex;
+            justify-content: space-between; align-items: center;
+            padding: 0 10px; box-sizing: border-box; font-size: 11px; font-weight: bold;
+            z-index: 10;
+        }
+
+        #banner-display {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: white; text-shadow: 1px 1px 4px rgba(0,0,0,0.6);
+        }
+
+        /* ANIMACIÓN DEL ICONO SUPERIOR */
+        #banner-img {
+            width: 85px; height: 85px; 
+            display: none; 
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 15px rgba(255,255,255,0.4));
+            /* La magia: flotación + rotación suave */
+            animation: float3D 3s infinite ease-in-out, rotate3D 8s infinite linear;
+        }
+
+        @keyframes float3D {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+
+        @keyframes rotate3D {
+            from { rotate: y 0deg; }
+            to { rotate: y 360deg; }
+        }
+
+        /* --- PANTALLA INFERIOR --- */
+        #bottom-screen {
+            flex: 1.3;
+            background-color: var(--3ds-light-bg);
+            background-image: radial-gradient(#d0d0d0 1px, transparent 1px);
+            background-size: 20px 20px;
+            display: flex; flex-direction: column;
+        }
+
+        .toolbar {
+            height: 35px; background: rgba(255,255,255,0.5);
+            border-bottom: 1px solid var(--3ds-border);
+            display: flex; align-items: center; padding: 0 10px; gap: 15px;
+        }
+
+        .channel-grid {
+            flex: 1; display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            padding: 15px; gap: 12px; align-content: start;
+        }
+
+        .icon-container { display: flex; justify-content: center; align-items: center; position: relative; }
+
+        .icon {
+            width: 75px; height: 75px; background: #fff;
+            border-radius: 12px; border: 1px solid var(--3ds-border);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            overflow: hidden; display: flex; justify-content: center; align-items: center;
+            z-index: 2;
+        }
+
+        .icon img { width: 85%; height: 85%; object-fit: contain; }
+
+        .selection-frame {
+            position: absolute; width: 85px; height: 85px;
+            border: 4px solid var(--3ds-select-green);
+            border-radius: 15px; display: none;
+            box-shadow: 0 0 12px var(--3ds-select-green);
+            animation: pulse 1s infinite; z-index: 1;
+        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .bottom-action-bar { height: 40px; background: #fff; display: flex; border-top: 1px solid var(--3ds-border); }
+        .action-btn { flex: 1; display: flex; justify-content: center; align-items: center; font-size: 13px; font-weight: bold; color: #555; border-right: 1px solid var(--3ds-border); }
+
+        /* --- TERMINAL --- */
+        #terminal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a0705; z-index: 6000; padding: 20px; box-sizing: border-box; }
+        .md-card { background: #3b1513; border-radius: 20px; height: 100%; padding: 25px; color: #ffb4ab; font-family: 'Courier New', monospace; overflow-y: auto; }
+        .heart-ascii { color: #ff897d; white-space: pre; font-size: 8px; text-align: center; margin-top: 20px; display: block; }
+    </style>
+</head>
+<body>
+
+    <audio id="menuBgm" loop src="3ds_bgm.mp3"></audio>
+    <audio id="clickSfx" src="3ds_select.mp3"></audio>
+
+    <div id="tap-to-start" onclick="startSequence()">
+        <p>TAP TO START</p>
+    </div>
+
+    <div id="boot-screen">
+        <video id="bootVideo" playsinline style="width:100%; height:100%; object-fit:contain;">
+            <source src="3ds.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <div id="ds-interface">
+        <div id="top-screen">
+            <div class="top-system-bar">
+                <span>📶 Internet</span>
+                <div><span id="clock">00:00</span> 🔋 67%</div>
+            </div>
+            <div id="banner-display">
+                <img id="banner-img" src="">
+                <div id="banner-text">
+                    <h2 id="app-title" style="margin:0">Menú Principal</h2>
+                    <p id="app-desc" style="margin:5px 0; opacity:0.8">Luma3DS Special Edition</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="bottom-screen">
+            <div class="toolbar">
+                <span style="font-size: 18px;">⚙️</span> <span style="font-size: 18px;">📁</span> <span style="font-size: 18px;">✏️</span> <span style="font-size: 18px;">💬</span>
+            </div>
+            <div class="channel-grid">
+                <div class="icon-container" onclick="selectApp(this, 'Cámara', 'Recuerdos 2021', 'cam3ds.png')">
+                    <div class="selection-frame"></div>
+                    <div class="icon"><img src="cam3ds.png"></div>
+                </div>
+                <div class="icon-container" onclick="selectApp(this, 'Mii Maker', 'Eliza ', 'mii.png')">
+                    <div class="selection-frame"></div>
+                    <div class="icon"><img src="mii.png"></div>
+                </div>
+                <div class="icon-container" onclick="handleR4(this)">
+                    <div class="selection-frame"></div>
+                    <div class="icon" style="background:#333;"><img src="r4.png"></div>
+                </div>
+                <div class="icon-container" onclick="selectApp(this, 'eShop', 'Nintendo Store', 'shop.png')">
+                    <div class="selection-frame"></div>
+                    <div class="icon"><img src="shop.png"></div>
+                </div>
+                <div class="icon-container" onclick="selectApp(this, 'Ajustes', '3DS de Elizabeth', 'settings.png')">
+                    <div class="selection-frame"></div>
+                    <div class="icon"><img src="settings.png"></div>
+                </div>
+                <div class="icon-container" onclick="selectApp(this, 'POKEMON: LUNA', '', 'moon.png')">
+                    <div class="selection-frame"></div>
+                    <div class="icon"><img src="moon.png"></div>
+                </div>
+            </div>
+            <div class="bottom-action-bar">
+                <div class="action-btn">Manual</div>
+                <div class="action-btn" style="background: #eee;">Abrir</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="terminal">
+        <div class="md-card" id="console-output"></div>
+    </div>
+
+    <script>
+        let r4Status = 0;
+
+        function startSequence() {
+            document.getElementById('tap-to-start').style.display = 'none';
+            const boot = document.getElementById('boot-screen');
+            const video = document.getElementById('bootVideo');
+            boot.style.display = 'flex';
+            video.play().then(() => {
+                video.onended = () => { showMenu(); };
+            }).catch(() => showMenu());
+        }
+
+        function showMenu() {
+            document.getElementById('boot-screen').style.display = 'none';
+            document.getElementById('ds-interface').style.display = 'flex';
+            document.getElementById('menuBgm').play();
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.getHours() + ":" + now.getMinutes().toString().padStart(2, '0');
+        }
+
+        function selectApp(element, title, desc, img) {
+            document.getElementById('clickSfx').play();
+            document.querySelectorAll('.selection-frame').forEach(f => f.style.display = 'none');
+            element.querySelector('.selection-frame').style.display = 'block';
+            
+            document.getElementById('app-title').innerText = title;
+            document.getElementById('app-desc').innerText = desc;
+            
+            const bImg = document.getElementById('banner-img');
+            bImg.src = img;
+            bImg.style.display = 'block';
+            
+            // Reiniciar animación para que se note el cambio
+            bImg.style.animation = 'none';
+            bImg.offsetHeight; 
+            bImg.style.animation = 'float3D 3s infinite ease-in-out, rotate3D 8s infinite linear';
+            
+            r4Status = 0;
+        }
+
+        function handleR4(element) {
+            if (r4Status === 0) {
+                selectApp(element, 'Wood R4 Kernel', 'Touch again to start', 'r4.png');
+                r4Status = 1;
+            } else {
+                startExploit();
+            }
+        }
+
+        function startExploit() {
+            document.getElementById('menuBgm').pause();
+            document.getElementById('ds-interface').style.display = 'none';
+            document.getElementById('terminal').style.display = 'block';
+            typeText();
+        }
+
+        function typeText() {
+    const lines = [
+        "> Luma3DS v13.0.2 SAFE_MODE",
+        "> Mounting SDMC... OK",
+        "> Initializing gift_for_elizabeth.cia",
+        "--------------------------------",
+        `"A veces apareces en mi vida como si el tiempo no hubiera pasado. Como si esos años no se hubieran ido, como si aún fuéramos aquellos adolescentes que se conocieron sin miedo, sin dudas, sin pensar en lo complicado que podía ser amar."`,
+        `"Y aunque hoy estemos a distancia, aunque no siempre estemos cerca, quiero que sepas algo: te quiero y te amo con la misma intensidad del primer día. Nada se ha debilitado. Nada se ha apagado. Mi corazón sigue reconociéndote como si fueras hogar."`,
+        `"Han pasado cinco largos años, y en todos ellos has estado presente de una forma u otra. En mis pensamientos, en mis recuerdos, en mis sueños, en mis silencios. A veces estás cerca, a veces lejos… pero nunca ausente de verdad."`,
+        `"Lo nuestro nació joven, puro, sin máscaras. Creció con nosotros, con nuestros errores, con nuestras decisiones, con nuestras heridas. Y aun así, sigue vivo. Porque lo que se construye con el alma no se destruye con la distancia."`,
+        `"Puede que la vida nos haya llevado por caminos distintos. Puede que no siempre sepamos dónde estamos parados. Pero hay algo que no cambia: lo que siento por ti."`,
+        `"Te amo como cuando te conocí."`,
+        `"Te extraño como si aún fueras parte de mi rutina."`,
+        `"Te pienso como si fueras parte de mi futuro."`,
+        `"No sé qué nos depare el destino. No sé cuándo ni cómo. Solo sé que mientras existas en este mundo, una parte de mi corazón siempre será tuya."`,
+        `"Porque cinco años no se olvidan."`,
+        `"Porque tú no se reemplazas."`,
+        `"Porque lo nuestro fue, es y será especial."`,
+        "Siempre tuyo. 💙",
+        "Eres especial y jamas dejes de ser asi.",
+        "¡Feliz 14 de Febrero!",
+        "Te amo más que a mis juegos. <3",
+        "--------------------------------",
+        "> Finalizing... Done.",
+        "> sudo poweroff"
+    ];
+
+    let i = 0;
+    const out = document.getElementById('console-output');
+    
+    function write() {
+        if (i < lines.length) {
+            out.innerHTML += lines[i] + "<br><br>"; // Añadí doble salto para que se lea mejor el texto largo
+            i++;
+            out.scrollTop = out.scrollHeight;
+            setTimeout(write, 1500); // Aumenté el tiempo a 1.5s para que Elizabeth alcance a leer cada párrafo
+        } else {
+            out.innerHTML += `<div class="heart-ascii">
+  ****** ******
+********** **********
+*********************
+  *******************
+    ***************
+      ***********
+        *******
+          ***
+           *</div>`;
+        }
+    }
+    write();
+}
+
+    </script>
+</body>
+</html>
